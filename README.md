@@ -1,19 +1,11 @@
-# Project structure
+# Info
 
-```
-- <lib name>: holds the code
-  - __init__.py
-- configs
-- notebooks
-- scripts: console scripts, if needed
-- tests: various testing stuff, if needed
-```
+Reproduce model from 
 
-`__init__.py` must contain this line:
-```python
-__development__ = True
-```
-in order to work correctly with connectome's caching.
+Fonteijn, Hubert M., Marc Modat, Matthew J. Clarkson, Josephine Barnes, Manja Lehmann,
+Nicola Z. Hobbs, Rachael I. Scahill et al. "An event-based model for disease progression 
+and its application in familial Alzheimer's disease and Huntington's disease."
+NeuroImage 60, no. 3 (2012): 1880-1889.
 
 # Install
 
