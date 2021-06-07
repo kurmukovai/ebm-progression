@@ -30,3 +30,37 @@ def greedy_ascent(log_p_E: np.ndarray, log_p_not_E: np.ndarray,
         else:
             order[a], order[b] = order[b], order[a]
     return order, loglike, update_iters
+
+
+def mcmc(log_p_E: np.ndarray, log_p_not_E: np.ndarray,
+                  order: np.ndarray=None, n_iter: int=10000, random_state: int=None):
+    """Performs MCMC optimization phase."""
+    
+    if order is None:
+        order = np.arange(log_p_E.shape[1])
+    if random_state is None or isinstance(random_state, int):
+        random = np.random.RandomState(random_state)
+    else:
+        raise TypeError
+        
+    indices = np.arange(len(order))
+    model = EventProbabilities(log_p_E, log_p_not_E)
+    orders, loglike, probas, update_iters = [], [], [], []
+    old_loglike = model.compute_total_likelihood(order)
+        
+    
+    for i in tqdm(range(n_iter)):
+        random.shuffle(indices)
+        a, b = indices[0], indices[1]
+        order[a], order[b] = order[b], order[a]
+        new_loglike = model.compute_total_likelihood(order)
+        p = np.exp(new_loglike - old_loglike)
+        if p > random.random_sample(): # TODO: check probas validity
+            old_loglike = new_loglike
+            loglike.append(old_loglike)
+            update_iters.append(i)
+            orders.append(order.copy())     
+            probas.append(p)
+        else:
+            order[a], order[b] = order[b], order[a]
+    return orders, loglike, update_iters, probas
