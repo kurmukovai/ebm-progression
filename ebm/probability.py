@@ -22,12 +22,16 @@ def fit_distributions(X, y, normalize=False):
     return p_e, p_not_e, left_min, right_max
 
 
-def log_distributions(X, y, normalize=False, eps=1e-6):
+def log_distributions(X, y, *, X_test=None, y_test=None, normalize=False, eps=1e-6):
     """Precomute probabilities for all features."""
     X = np.array(X).astype(np.float64)
     y = np.array(y)
     cdf_p_e, cdf_p_not_e, left_min, right_max = fit_distributions(X, y, normalize=normalize)
     
+    if X_test is not None:
+        X = np.array(X_test).astype(np.float64)
+        y = np.array(y_test)
+        
     n, m = X.shape
     log_p_e, log_p_not_e = np.zeros_like(X), np.zeros_like(X)
 
@@ -36,3 +40,10 @@ def log_distributions(X, y, normalize=False, eps=1e-6):
             log_p_e[i,j] = np.log(1 - cdf_p_e[j].cdf(np.clip(X[i, j], left_min[j]+eps, right_max[j]-eps))+eps)
             log_p_not_e[i,j] = np.log(cdf_p_not_e[j].cdf(X[i, j])+eps)
     return log_p_e, log_p_not_e
+
+
+def predict_stage(event_order, log_p_e, log_p_not_e):
+    likelihood = []
+    for k in range(n_stages):
+        likelihood.append(log_p_e[:, event_order[k]]- log_p_not_e[:, event_order[k]]) 
+    return np.array(likelihood)

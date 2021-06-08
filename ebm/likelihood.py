@@ -36,3 +36,6 @@ class EventProbabilities:
             event_order = np.arange(self.n_stages)
             
         return np.sum(np.log(self._subject_likelihood(event_order)))
+    
+
+

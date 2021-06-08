@@ -22,7 +22,7 @@ if __name__=="__main__":
 
     orders, loglike, update_iters, probas = mcmc(log_p_e, log_p_not_e, order=order, n_iter=1_000_000)
 
-    np.save('../logs/order_mcmc.npy', np.array(order))
+    np.save('../logs/order_mcmc.npy', np.array(orders))
     np.save('../logs/loglike_mcmc.npy', np.array(loglike))
     np.save('../logs/update_iters_mcmc.npy', np.array(update_iters))
     np.save('../logs/probas_mcmc.npy', np.array(probas))
