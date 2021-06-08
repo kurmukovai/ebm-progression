@@ -3,7 +3,7 @@ from tqdm import tqdm
 from .likelihood import EventProbabilities
 
 def greedy_ascent(log_p_E: np.ndarray, log_p_not_E: np.ndarray,
-                  order: np.ndarray=None, n_iter: int=10000, random_state: int=None):
+                  order: np.ndarray=None, n_iter: int=10000, prior=None, random_state: int=None):
     """Performs greedy ascent optimization phase."""
     
     if order is None:
@@ -16,13 +16,13 @@ def greedy_ascent(log_p_E: np.ndarray, log_p_not_E: np.ndarray,
     indices = np.arange(len(order))
     model = EventProbabilities(log_p_E, log_p_not_E)
     loglike, update_iters = [], []
-    old_loglike = model.compute_total_likelihood(order)
+    old_loglike = model.compute_total_likelihood(order, prior=prior)
         
     for i in tqdm(range(n_iter)):
         random.shuffle(indices)
         a, b = indices[0], indices[1]
         order[a], order[b] = order[b], order[a]
-        new_loglike = model.compute_total_likelihood(order)
+        new_loglike = model.compute_total_likelihood(order, prior=prior)
         if new_loglike > old_loglike:
             old_loglike = new_loglike
             loglike.append(old_loglike)
@@ -33,7 +33,7 @@ def greedy_ascent(log_p_E: np.ndarray, log_p_not_E: np.ndarray,
 
 
 def mcmc(log_p_E: np.ndarray, log_p_not_E: np.ndarray,
-                  order: np.ndarray=None, n_iter: int=10000, random_state: int=None):
+                  order: np.ndarray=None, n_iter: int=10000, prior=None, random_state: int=None):
     """Performs MCMC optimization phase."""
     
     if order is None:
@@ -46,13 +46,13 @@ def mcmc(log_p_E: np.ndarray, log_p_not_E: np.ndarray,
     indices = np.arange(len(order))
     model = EventProbabilities(log_p_E, log_p_not_E)
     orders, loglike, probas, update_iters = [], [], [], []
-    old_loglike = model.compute_total_likelihood(order)
+    old_loglike = model.compute_total_likelihood(order, prior=prior)
         
     for i in tqdm(range(n_iter)):
         random.shuffle(indices)
         a, b = indices[0], indices[1]
         order[a], order[b] = order[b], order[a]
-        new_loglike = model.compute_total_likelihood(order)
+        new_loglike = model.compute_total_likelihood(order, prior=prior)
         p = np.exp(new_loglike - old_loglike)
         if p > random.random_sample(): # TODO: check probas validity
             old_loglike = new_loglike
