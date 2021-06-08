@@ -10,8 +10,8 @@ NeuroImage 60, no. 3 (2012): 1880-1889.
 # Install
 
 ```
-git clone <repo>
-./<repo name>/install.sh
+git clone https://github.com/kurmukovai/ebm-progression.git
+./ebm-progression/install.sh
 ```
 
 # Code of conduct
