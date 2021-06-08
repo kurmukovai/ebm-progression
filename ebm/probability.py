@@ -1,40 +1,37 @@
 import numpy as np
 
 
-def fit_distributions(X, y):
-    '''Fit distribution p(x|E), p(x|~E).'''
+def fit_distributions(X, y, normalize=False):
+    """Fit distribution p(x|E), p(x|~E) as a mixture of Gaussian and Uniform, see Fonteijn 
+    section `Mixture models for the data likelihood`. 
+    - P(x|E) = P(x > X | E)
+    - P(x|~E) = P(x < X| ~E)
+    """
+    # TODO: not sure about how to compute probabilities
     from scipy.stats import norm, uniform
-    y = np.array(y)
-    X = np.array(X).astype(np.float64)
-    X = X / X.max(axis=1)[:, np.newaxis]
+    if normalize:
+        X = X / X.max(axis=1)[:, np.newaxis]
     
     avg = X[y==0, ...].mean(axis=0)
     std = X[y==0, ...].std(axis=0)
     p_not_E = [norm(loc, s) for loc, s in zip(avg, std)]
-    
-    eps=1e-3
-    _min = X[y==1, ...].min(axis=0) - eps
-    p_E = [uniform(m1, m2) for m1, m2 in zip(_min, avg)]
-    
+
+    left_min = X.min(axis=0)
+    p_E = [uniform(m1, m2) for m1, m2 in zip(left_min, avg)]
     return np.array(p_E), np.array(p_not_E)
 
-def log_distributions(X, y):
-    p_E, p_not_E = fit_distributions(X, y)
+
+def log_distributions(X, y, normalize=False, eps=1e-6):
+    """Precomute probabilities for all features."""
+    X = np.array(X).astype(np.float64)
+    y = np.array(y)
+    cdf_p_E, cdf_p_not_E = fit_distributions(X, y, normalize=normalize)
     
     n, m = X.shape
-    p_E_precomputed = np.zeros_like(X)
-    
-    X = np.array(X).astype(np.float64)
-    X = X / X.max(axis=0)[np.newaxis, :]
+    log_p_E, log_p_not_E = np.zeros_like(X), np.zeros_like(X)
 
     for i in range(n):
         for j in range(m):
-            p_E_precomputed[i,j] = np.log(p_E[j].cdf(X[i, j]))
-
-    p_not_E_precomputed = np.zeros_like(X)
-
-    for i in range(n):
-        for j in range(m):
-            p_not_E_precomputed[i,j] = np.log(p_not_E[j].cdf(X[i, j]))
-    
-    return p_E_precomputed, p_not_E_precomputed
+            log_p_E[i,j] = np.log(1 - cdf_p_E[j].cdf(X[i, j])+eps)
+            log_p_not_E[i,j] = np.log(cdf_p_not_E[j].cdf(X[i, j])+eps)
+    return log_p_E, log_p_not_E
