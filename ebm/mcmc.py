@@ -48,7 +48,6 @@ def mcmc(log_p_E: np.ndarray, log_p_not_E: np.ndarray,
     orders, loglike, probas, update_iters = [], [], [], []
     old_loglike = model.compute_total_likelihood(order)
         
-    
     for i in tqdm(range(n_iter)):
         random.shuffle(indices)
         a, b = indices[0], indices[1]
@@ -64,3 +63,25 @@ def mcmc(log_p_E: np.ndarray, log_p_not_E: np.ndarray,
         else:
             order[a], order[b] = order[b], order[a]
     return orders, loglike, update_iters, probas
+
+
+def get_optimal_order(orders: list):
+    # TODO: number of regions is hardcoded
+    # How many time region `r` is on position `i`
+    order_map = np.zeros((68,68))
+    for i in range(68):
+        region, freq = np.unique(orders[:, i], return_counts=True)
+        for r, f in zip(region, freq):
+            order_map[r, i] = f
+            
+    # Optimal order
+    best_order = []
+    for i in range(68):
+        candidate_regions = np.argsort(order_map[:, i])[::-1]
+        for reg in candidate_regions:
+            if reg not in best_order:
+                best_order.append(reg)
+                break
+    best_order = np.array(best_order)  
+    return order_map, best_order
+
