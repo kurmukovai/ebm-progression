@@ -2,8 +2,10 @@ import numpy as np
 from tqdm import tqdm
 from .likelihood import EventProbabilities
 
+# TODO: combine greedy_ascent and mcmc into a single func
+
 def greedy_ascent(log_p_E: np.ndarray, log_p_not_E: np.ndarray,
-                  order: np.ndarray=None, n_iter: int=10000, prior=None, random_state: int=None):
+                  order: np.ndarray=None, n_iter: int=10_000, prior=None, random_state: int=None):
     """Performs greedy ascent optimization phase."""
     
     if order is None:
@@ -33,7 +35,7 @@ def greedy_ascent(log_p_E: np.ndarray, log_p_not_E: np.ndarray,
 
 
 def mcmc(log_p_E: np.ndarray, log_p_not_E: np.ndarray,
-                  order: np.ndarray=None, n_iter: int=10000, prior=None, random_state: int=None):
+                  order: np.ndarray=None, n_iter: int=100_000, prior=None, random_state: int=None):
     """Performs MCMC optimization phase."""
     
     if order is None:
@@ -66,17 +68,19 @@ def mcmc(log_p_E: np.ndarray, log_p_not_E: np.ndarray,
 
 
 def get_optimal_order(orders: list):
+    """Computes optimal order from list of orders obtained over MCMC runs."""
     # TODO: number of regions is hardcoded
     # How many time region `r` is on position `i`
-    order_map = np.zeros((68,68))
-    for i in range(68):
+    n_stages = len(orders[0])
+    order_map = np.zeros((n_stages,n_stages))
+    for i in range(n_stages):
         region, freq = np.unique(orders[:, i], return_counts=True)
         for r, f in zip(region, freq):
             order_map[r, i] = f
             
     # Optimal order
     best_order = []
-    for i in range(68):
+    for i in range(n_stages):
         candidate_regions = np.argsort(order_map[:, i])[::-1]
         for reg in candidate_regions:
             if reg not in best_order:

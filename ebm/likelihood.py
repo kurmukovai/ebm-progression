@@ -24,8 +24,15 @@ class EventProbabilities:
         # assuming flat prior p(k)
         return self.subjects_likelihood
     
-    def _compute_connectivity_prior(self, aver_connectome: np.ndarray = None):
-        pass
+    
+    def _compute_connectivity_prior(self, event_order: np.ndarray, path_log_proba_adj: np.ndarray):
+        total = 0
+        i0 = event_order[0]
+        for event in event_order:
+            total += path_log_proba_adj[i0, event]
+            i0 = event
+        return total
+
     
     def compute_total_likelihood(self, event_order: np.ndarray = None, prior=None):
         """Computes log(P(X|S)), see Fonteijn, (3)"""
@@ -37,15 +44,6 @@ class EventProbabilities:
             
         log_prior = 0
         if prior is not None:
-            log_prior = compute_prior_path(prior, event_order)
+            log_prior = self._compute_connectivity_prior(event_order=event_order, path_log_proba_adj=prior)
             
         return np.sum(np.log(self._subject_likelihood(event_order))) + log_prior
-    
-
-def compute_prior_path(path_log_proba_adj, event_order):
-    total = 0
-    i0 = event_order[0]
-    for event in event_order:
-        total += path_log_proba_adj[i0, event]
-        i0 = event
-    return total

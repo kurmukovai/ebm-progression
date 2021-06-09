@@ -44,6 +44,6 @@ def log_distributions(X, y, *, X_test=None, y_test=None, normalize=False, eps=1e
 
 def predict_stage(event_order, log_p_e, log_p_not_e):
     likelihood = []
-    for k in range(68):
+    for k in range(len(event_order)):
         likelihood.append(log_p_e[:, event_order[k]]- log_p_not_e[:, event_order[k]]) 
     return np.array(likelihood)
