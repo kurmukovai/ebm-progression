@@ -30,7 +30,7 @@ if __name__=="__main__":
     log_p_e, log_p_not_e = log_distributions(X, y)
 
     # 3. Run greedy ascent optimization phase
-    order, loglike, update_iters = greedy_ascent(log_p_e, log_p_not_e, n_iter=100_000, prior=prior)
+    order, loglike, update_iters = greedy_ascent(log_p_e, log_p_not_e, n_iter=100_000, prior=prior, random_state=2020)
 
     prefix = '' if not prior_path else 'prior_'
     np.save(f'../logs/{prefix}order_greedy_ascent.npy', np.array(order))
@@ -38,7 +38,8 @@ if __name__=="__main__":
     np.save(f'../logs/{prefix}update_iters_greedy_ascent.npy', np.array(update_iters))
 
     # 4. Run MCMC optimization phase
-    orders, loglike, update_iters, probas = mcmc(log_p_e, log_p_not_e, order=order, n_iter=1_000_000, prior=prior)
+    orders, loglike, update_iters, probas = mcmc(log_p_e, log_p_not_e,
+                                                 order=order, n_iter=1_000_000, prior=prior, random_state=2020)
 
     np.save(f'../logs/{prefix}order_mcmc.npy', np.array(orders))
     np.save(f'../logs/{prefix}loglike_mcmc.npy', np.array(loglike))
