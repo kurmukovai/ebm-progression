@@ -10,9 +10,11 @@ class EventProbabilities:
         self._likelihood = self._init_likelihood()
         self.subjects_likelihood = None
     
+    
     def _init_likelihood(self,):
         """Computes likelihood for stage k=0, see Fonteijn, (1), for every subject."""
         return np.sum(self.log_p_not_E, axis=1)
+    
     
     def _subject_likelihood(self, event_order: np.ndarray = None):
         """Computes formula (2) form Fonteijn"""

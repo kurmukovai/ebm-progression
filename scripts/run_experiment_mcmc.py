@@ -10,16 +10,17 @@ from ebm.mcmc import greedy_ascent, mcmc
 
 if __name__=="__main__":
     
+    file_path = sys.argv[1] # '/data01/bgutman/MRI_data/PPMI/EBM_data/corrected_ENIGMA-PD_Mixed_Effects_train_test_split.csv'
+    
     try:
-        prior_path = sys.argv[1] # Path to file with numpy array with connectivity prior, 
+        prior_path = sys.argv[2] # Path to file with numpy array with connectivity prior, 
         # `/data01/bgutman/parkinson_ebm/log_transition_probabilities_adni.npy`
         # TODO: add prior computation
     except:
         prior_path, prior = None, None
         
     # 1. Load data
-    folder = Path('/data01/bgutman/MRI_data/PPMI/EBM_data/')
-    data = pd.read_csv(folder / 'corrected_ENIGMA-PD_Mixed_Effects_train_test_split.csv', index_col=0)
+    data = pd.read_csv(file_path, index_col=0)
     train, test = train_test_split(data, stratify=data['cohort'], test_size=0.1, random_state=777)
     X = train.drop(['SubjID', 'Dx', 'Sex', 'Age', 'cohort'], axis=1).values
     y = train['Dx'].values
