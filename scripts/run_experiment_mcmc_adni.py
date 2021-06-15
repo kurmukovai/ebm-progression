@@ -9,19 +9,22 @@ from ebm.mcmc import greedy_ascent, mcmc
 
 if __name__=="__main__":
     
-    file_path = sys.argv[1] # '/data01/bgutman/MRI_data/ADNI1/Anat_measures/CorticalMeasuresENIGMA_SurfAvg_CROSS_ADNI1_sc.csv'
-    
+    file_path = sys.argv[1] # '/home/kurmukov/SurfAvg_ADNI1_sc.csv'
+    # '/data01/bgutman/MRI_data/ADNI1/Anat_measures/CorticalMeasuresENIGMA_SurfAvg_CROSS_ADNI1_sc.csv'
+    # '/data01/bgutman/MRI_data/ADNI1/ADNI_sc_vents840-sorted.csv'
     try:
         prior_path = sys.argv[2] # Path to file with numpy array with connectivity prior, 
         # `/data01/bgutman/parkinson_ebm/log_transition_probabilities_adni.npy`
         # TODO: add prior computation
     except:
         prior_path, prior = None, None
-        
+     
+    
     # 1. Load data
-    data = pd.read_csv(file_path)
+    data = pd.read_csv(file_path, index_col=0)
     train, test = train_test_split(data, test_size=0.1, random_state=777)
-    X = train.drop(['SubjID', 'LThickness','RThickness','LSurfArea','RSurfArea','ICV'], axis=1).values
+    X = train.drop(['Dx', 'dx', 'Subject', 'SubjID', 'LThickness','RThickness','LSurfArea','RSurfArea','ICV'], axis=1).values
+    assert X.shape[1] == 68
     y = train['Dx'].values
     if prior_path:
         prior = np.load(prior_path)
