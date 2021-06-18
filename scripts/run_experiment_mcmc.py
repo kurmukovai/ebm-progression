@@ -1,4 +1,4 @@
-import sys
+import argparse
 import pandas as pd
 import numpy as np
 
@@ -9,48 +9,68 @@ from ebm.probability import log_distributions, fit_distributions
 from ebm.mcmc import greedy_ascent, mcmc
 
 if __name__=="__main__":
-    
-    file_path = sys.argv[1] # '/data01/bgutman/MRI_data/PPMI/EBM_data/corrected_ENIGMA-PD_Mixed_Effects_train_test_split.csv'
-    # '/home/kurmukov/ENIGMA-PD-regional.csv'
-       
-    try:
-        suffix = sys.argv[2]
-    except:
-        suffix = ''
-        
-    try:
-        prior_path = sys.argv[3] # Path to file with numpy array with connectivity prior, 
-        # `/data01/bgutman/parkinson_ebm/log_transition_probabilities_adni.npy`
-        # TODO: add prior computation
-    except:
-        prior_path, prior = None, None
 
+    parser = argparse.ArgumentParser(
+        description='Runs MCMC optimization for EBM.')
+    parser.add_argument('file_path', help='csv file containing brain regions thickness and target variable')
+    parser.add_argument('output', help='folder to store the results')
+    parser.add_argument('point_probability', 
+        help='whether to use cumulative probability or point probability', default=False)
+    parser.add_argument('connectome_prior', 
+        help='path to numpy array with precomputed average connectome prior')
+    parser.add_argument('col_suffix', help='Fatures suffix used in the spreadsheet', default='thick')
+    parser.add_argument('stratify', help='Spreadsheet column to stratify by', default=None)
+    parser.add_argument('random_state', help='MCMC random state', default=2020)
+    args = parser.parse_args()
+
+    # file paths
+    # '/data01/bgutman/MRI_data/PPMI/EBM_data/corrected_ENIGMA-PD_Mixed_Effects_train_test_split.csv'
+    # '/home/kurmukov/ENIGMA-PD-regional.csv'
+    # adni
+    # '/home/kurmukov/SurfAvg_ADNI1_sc.csv'
+    # '/data01/bgutman/MRI_data/ADNI1/Anat_measures/CorticalMeasuresENIGMA_SurfAvg_CROSS_ADNI1_sc.csv'
+    # '/data01/bgutman/MRI_data/ADNI1/ADNI_sc_vents840-sorted.csv'
+
+    # Path to file with numpy array with connectivity prior, 
+    # `/data01/bgutman/parkinson_ebm/log_transition_probabilities_adni.npy`
         
     # 1. Load data
-    data = pd.read_csv(file_path, index_col=0)
-    train, test = train_test_split(data, stratify=data['cohort'], test_size=0.1, random_state=777)
-    X = train.drop(['SubjID', 'Dx', 'Sex', 'Age', 'cohort'], axis=1).values
+    data = pd.read_csv(args.file_path, index_col=0)
+    cols = [c for c in data.columns if args.col_suffix in c]
+    train, test = train_test_split(data, stratify=args.stratify, test_size=0.1, random_state=777)
+
+    try:
+        X = train[cols].values
+        y = train['Dx'].values
+    except KeyError: # check
+        print(f'Spreadsheet should contain `{args.col_suffix}` columns and `Dx` columns: {data.columns} were passed.')
+
     assert X.shape[1] == 68, f'{X.shape}'
-    y = train['Dx'].values
-    if prior_path:
-        prior = np.load(prior_path)
+
+    if args.connectome_prior:
+        prior = np.load(args.connectome_prior)
     
     # 2. Precomute distributions P(x|E), P(x| not E)
-    log_p_e, log_p_not_e = log_distributions(X, y)
+    log_p_e, log_p_not_e = log_distributions(X, y, point_proba=args.point_probability)
 
     # 3. Run greedy ascent optimization phase
-    order, loglike, update_iters = greedy_ascent(log_p_e, log_p_not_e, n_iter=100_000, prior=prior, random_state=2020)
+    order, loglike, update_iters = greedy_ascent(log_p_e, log_p_not_e, n_iter=100_000,
+                                                 prior=prior, random_state=2020)
 
-    prefix = f'{suffix}_' if not prior_path else f'prior_{suffix}_'
-    np.save(f'../logs/{prefix}order_greedy_ascent.npy', np.array(order))
-    np.save(f'../logs/{prefix}loglike_greedy_ascent.npy', np.array(loglike))
-    np.save(f'../logs/{prefix}update_iters_greedy_ascent.npy', np.array(update_iters))
+    # 4. Save results greedy ascent
+    output = Path(args.output)
 
-    # 4. Run MCMC optimization phase
+    np.save(output / 'order_greedy_ascent.npy', np.array(order))
+    np.save(output / 'loglike_greedy_ascent.npy', np.array(loglike))
+    np.save(output / 'update_iters_greedy_ascent.npy', np.array(update_iters))
+
+    # 5. Run MCMC optimization phase
     orders, loglike, update_iters, probas = mcmc(log_p_e, log_p_not_e,
-                                                 order=order, n_iter=1_000_000, prior=prior, random_state=2020)
+                                                 order=order, n_iter=1_000_000,
+                                                 prior=prior, random_state=2020)
 
-    np.save(f'../logs/{prefix}order_mcmc.npy', np.array(orders))
-    np.save(f'../logs/{prefix}loglike_mcmc.npy', np.array(loglike))
-    np.save(f'../logs/{prefix}update_iters_mcmc.npy', np.array(update_iters))
-    np.save(f'../logs/{prefix}probas_mcmc.npy', np.array(probas))
+    # 6. Save results MCMC
+    np.save(output / 'order_mcmc.npy', np.array(orders))
+    np.save(output / 'loglike_mcmc.npy', np.array(loglike))
+    np.save(output / 'update_iters_mcmc.npy', np.array(update_iters))
+    np.save(output / 'probas_mcmc.npy', np.array(probas))
