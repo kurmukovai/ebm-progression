@@ -9,20 +9,26 @@ from ebm.probability import log_distributions, fit_distributions
 from ebm.mcmc import greedy_ascent, mcmc
 
 if __name__=="__main__":
+    # EXAMPLE
+    # python run_experiment_mcmc.py --file_path /home/kurmukov/SurfAvg_ADNI1_sc.csv 
+    #                               --output /data01/bgutman/parkinson_ebm/results/mcmc_results/point_proba/adni/no_prior 
+    #                               --connectome_prior /data01/bgutman/parkinson_ebm/log_transition_probabilities_adni.npy
+    #                               --point_probability True
+    #                               --col_suffix surfavg
 
     parser = argparse.ArgumentParser(
         description='Runs MCMC optimization for EBM.')
-    parser.add_argument('file_path', help='csv file containing brain regions thickness and target variable')
-    parser.add_argument('output', help='folder to store the results')
-    parser.add_argument('point_probability', 
-        help='whether to use cumulative probability or point probability', default=False)
-    parser.add_argument('connectome_prior', 
-        help='path to numpy array with precomputed average connectome prior')
-    parser.add_argument('col_suffix', help='Fatures suffix used in the spreadsheet', default='thick')
-    parser.add_argument('stratify', help='Spreadsheet column to stratify by', default=None)
-    parser.add_argument('random_state', help='MCMC random state', default=2020)
+    parser.add_argument('--file_path', help='csv file containing brain regions thickness and target variable')
+    parser.add_argument('--output', help='folder to store the results')
+    parser.add_argument('--point_probability', 
+        help='whether to use cumulative probability or point probability', default=0, type=int)
+    parser.add_argument('--connectome_prior', 
+        help='path to numpy array with precomputed average connectome prior', default=False)
+    parser.add_argument('--col_suffix', help='Features suffix used in the spreadsheet', default='thick')
+    parser.add_argument('--stratify', help='Spreadsheet column to stratify by', default=None)
+    parser.add_argument('--random_state', help='MCMC random state', default=2020)
     args = parser.parse_args()
-
+    print(type(args.point_probability))
     # file paths
     # '/data01/bgutman/MRI_data/PPMI/EBM_data/corrected_ENIGMA-PD_Mixed_Effects_train_test_split.csv'
     # '/home/kurmukov/ENIGMA-PD-regional.csv'
@@ -47,11 +53,12 @@ if __name__=="__main__":
 
     assert X.shape[1] == 68, f'{X.shape}'
 
+    prior = None
     if args.connectome_prior:
         prior = np.load(args.connectome_prior)
     
     # 2. Precomute distributions P(x|E), P(x| not E)
-    log_p_e, log_p_not_e = log_distributions(X, y, point_proba=args.point_probability)
+    log_p_e, log_p_not_e = log_distributions(X, y, point_proba=bool(args.point_probability))
 
     # 3. Run greedy ascent optimization phase
     order, loglike, update_iters = greedy_ascent(log_p_e, log_p_not_e, n_iter=100_000,

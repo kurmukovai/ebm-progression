@@ -22,7 +22,7 @@ def fit_distributions(X, y, normalize=False):
     return p_e, p_not_e, left_min, right_max
 
 
-def log_distributions(X, y, point_proba=False, *, X_test=None, y_test=None, normalize=False, eps=1e-6):
+def log_distributions(X, y, point_proba=False, *, X_test=None, y_test=None, normalize=False, eps=1e-8):
     """Precomute probabilities for all features."""
     X = np.array(X).astype(np.float64)
     y = np.array(y)
@@ -39,14 +39,23 @@ def log_distributions(X, y, point_proba=False, *, X_test=None, y_test=None, norm
     if not point_proba:
         for i in range(n):
             for j in range(m):
-                log_p_e[i,j] = np.log(1 - cdf_p_e[j].cdf(np.clip(X[i, j], left_min[j]+eps, right_max[j]-eps))+eps)
-                log_p_not_e[i,j] = np.log(cdf_p_not_e[j].cdf(X[i, j])+eps)
+                p = cdf_p_e[j].cdf(np.clip(X[i, j], left_min[j]+eps, right_max[j]-eps))
+                log_p_e[i,j] = np.log(np.clip(1 - p, eps, 1-eps))
+                
+                p = cdf_p_not_e[j].cdf(X[i, j])
+                log_p_not_e[i,j] = np.log(np.clip(p, eps, 1-eps))
     else:
         for i in range(n):
             for j in range(m):
-                window = np.abs(X[:, j].max() - X[:, j].min()) / 100
-                log_p_e[i,j] = np.log(cdf_p_e[j].cdf(X[i, j]+window+eps) - cdf_p_e[j].cdf(X[i, j]+eps))
-                log_p_not_e[i,j] = np.log(cdf_p_not_e[j].cdf(X[i, j]+window/2) - cdf_p_not_e[j].cdf(X[i, j]-window/2))
+                window = np.abs(right_max[j] - left_min[j]) / 20
+                
+                p_left = cdf_p_e[j].cdf(np.clip(X[i, j], left_min[j]+eps, right_max[j]-eps)-window/2)
+                p_right = cdf_p_e[j].cdf(np.clip(X[i, j], left_min[j]+eps, right_max[j]-eps)+window/2)
+                log_p_e[i,j] = np.log(np.clip(p_right - p_left, eps, 1-eps))
+                
+                p_left = cdf_p_not_e[j].cdf(X[i, j]-window/2)
+                p_right = cdf_p_not_e[j].cdf(X[i, j]+window/2)
+                log_p_not_e[i,j] = np.log(np.clip(p_right - p_left, eps, 1-eps))
     return log_p_e, log_p_not_e
 
 
