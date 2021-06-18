@@ -13,7 +13,12 @@ if __name__=="__main__":
     # '/data01/bgutman/MRI_data/ADNI1/Anat_measures/CorticalMeasuresENIGMA_SurfAvg_CROSS_ADNI1_sc.csv'
     # '/data01/bgutman/MRI_data/ADNI1/ADNI_sc_vents840-sorted.csv'
     try:
-        prior_path = sys.argv[2] # Path to file with numpy array with connectivity prior, 
+        suffix = sys.argv[2]
+    except:
+        suffix = ''
+    
+    try:
+        prior_path = sys.argv[3] # Path to file with numpy array with connectivity prior, 
         # `/data01/bgutman/parkinson_ebm/log_transition_probabilities_adni.npy`
         # TODO: add prior computation
     except:
@@ -35,7 +40,7 @@ if __name__=="__main__":
     # 3. Run greedy ascent optimization phase
     order, loglike, update_iters = greedy_ascent(log_p_e, log_p_not_e, n_iter=100_000, prior=prior, random_state=2020)
 
-    prefix = 'adni_' if not prior_path else 'adni_prior_'
+    prefix = f'{suffix}_adni_' if not prior_path else f'adni_prior_{suffix}_'
     np.save(f'../logs/{prefix}order_greedy_ascent.npy', np.array(order))
     np.save(f'../logs/{prefix}loglike_greedy_ascent.npy', np.array(loglike))
     np.save(f'../logs/{prefix}update_iters_greedy_ascent.npy', np.array(update_iters))

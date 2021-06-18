@@ -22,7 +22,7 @@ def fit_distributions(X, y, normalize=False):
     return p_e, p_not_e, left_min, right_max
 
 
-def log_distributions(X, y, *, X_test=None, y_test=None, normalize=False, eps=1e-6):
+def log_distributions(X, y, point_proba=False, *, X_test=None, y_test=None, normalize=False, eps=1e-6):
     """Precomute probabilities for all features."""
     X = np.array(X).astype(np.float64)
     y = np.array(y)
@@ -34,11 +34,19 @@ def log_distributions(X, y, *, X_test=None, y_test=None, normalize=False, eps=1e
         
     n, m = X.shape
     log_p_e, log_p_not_e = np.zeros_like(X), np.zeros_like(X)
-
-    for i in range(n):
-        for j in range(m):
-            log_p_e[i,j] = np.log(1 - cdf_p_e[j].cdf(np.clip(X[i, j], left_min[j]+eps, right_max[j]-eps))+eps)
-            log_p_not_e[i,j] = np.log(cdf_p_not_e[j].cdf(X[i, j])+eps)
+    
+    
+    if not point_proba:
+        for i in range(n):
+            for j in range(m):
+                log_p_e[i,j] = np.log(1 - cdf_p_e[j].cdf(np.clip(X[i, j], left_min[j]+eps, right_max[j]-eps))+eps)
+                log_p_not_e[i,j] = np.log(cdf_p_not_e[j].cdf(X[i, j])+eps)
+    else:
+        for i in range(n):
+            for j in range(m):
+                window = np.abs(X[:, j].max() - X[:, j].min()) / 100
+                log_p_e[i,j] = np.log(cdf_p_e[j].cdf(X[i, j]+window+eps) - cdf_p_e[j].cdf(X[i, j]+eps))
+                log_p_not_e[i,j] = np.log(cdf_p_not_e[j].cdf(X[i, j]+window/2) - cdf_p_not_e[j].cdf(X[i, j]-window/2))
     return log_p_e, log_p_not_e
 
 
