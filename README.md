@@ -11,7 +11,7 @@ NeuroImage 60, no. 3 (2012): 1880-1889.
 
 ```
 git clone https://github.com/kurmukovai/ebm-progression.git
-./ebm-progression/install.sh
+pip install -e .
 ```
 
 # Code of conduct
